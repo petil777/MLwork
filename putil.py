@@ -3,6 +3,7 @@ import seaborn as sns
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler, RobustScaler, StandardScaler
 from sklearn.metrics import mean_squared_error
+from sklearn.model_selection import validation_curve
 
 def show_distrib(df, st=0, ed=0, col_names=[]):
     #Use muliple subplots to see in different plots
@@ -55,3 +56,10 @@ def get_rmse(model, x_test, y_test):
     mse = mean_squared_error(y_test, pred)
     rmse = np.sqrt(mse)
     return rmse
+
+
+#learning curve
+
+#validation curve (for one hyper parameter tuning)
+
+#silhouette graph (for unsupervised clustering)
