@@ -10,6 +10,7 @@ from scipy.stats import skew
 import tensorflow as tf
 from tensorflow.keras import Model
 import os
+from tensorflow.keras import backend as K
 
 from sklearn.base import BaseEstimator
 df = pd.read_csv('./data/train.csv')
@@ -60,6 +61,7 @@ x_train, x_test, y_train, y_test = train_test_split(df.drop(columns=['SalePrice'
 # %%
 # Function API version (useful for quick test. But not compatible with StackRegressor for get_params absent...)
 def create_model(drop_rate):
+    K.clear_session()
     inp = tf.keras.Input(shape=(df.columns.shape[0]-1,))#without batch?
     out1 = tf.keras.layers.Dense(500, activation=tf.nn.tanh)(inp)
     drop1 = tf.keras.layers.Dropout(drop_rate)(out1)
@@ -94,6 +96,7 @@ class MyModel(tf.keras.Model, BaseEstimator):
         return self.out(o3)
 
 def create_model_instance(NN1, NN2, NN3, drop_rate, drop_rate2):
+    K.clear_session()
     mymodel = MyModel(NN1, NN2, NN3, drop_rate, drop_rate2)
     mymodel.compile(optimizer = tf.keras.optimizers.Adam(), loss=tf.keras.losses.msle)
     return mymodel
