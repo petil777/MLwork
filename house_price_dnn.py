@@ -60,13 +60,14 @@ x_train, x_test, y_train, y_test = train_test_split(df.drop(columns=['SalePrice'
 
 # %%
 # Function API version (useful for quick test. But not compatible with StackRegressor for get_params absent...)
-def create_model(drop_rate):
+def create_model(NN1, NN2, NN3, drop_rate, drop_rate2):
     K.clear_session()
-    inp = tf.keras.Input(shape=(df.columns.shape[0]-1,))#without batch?
-    out1 = tf.keras.layers.Dense(500, activation=tf.nn.tanh)(inp)
+    inp = tf.keras.Input(shape=(df.columns.shape[0]-1,))#without batch!
+    out1 = tf.keras.layers.Dense(NN1, activation=tf.nn.tanh)(inp)
     drop1 = tf.keras.layers.Dropout(drop_rate)(out1)
-    out2 = tf.keras.layers.Dense(1000, activation=tf.nn.leaky_relu)(drop1)
-    out3 = tf.keras.layers.Dense(100)(out2)
+    out2 = tf.keras.layers.Dense(NN2, activation=tf.nn.leaky_relu)(drop1)
+    drop2 = tf.keras.layers.Dropout(drop_rate2)(out2)
+    out3 = tf.keras.layers.Dense(NN3)(drop2)
     out = tf.keras.layers.Dense(1, activation='linear')(out3)
 
     model = tf.keras.Model(inputs=inp, outputs=out)
@@ -86,8 +87,9 @@ class MyModel(tf.keras.Model, BaseEstimator):
         self.dropout2 = tf.keras.layers.Dropout(drop_rate2)
         self.out3 = tf.keras.layers.Dense(NN3)
         self.out = tf.keras.layers.Dense(1, activation='linear')
-        # self.compile(optimizer = tf.keras.optimizers.Adam(), loss=tf.keras.losses.msle)
-    def __call__(self, inputs, training=True):
+    # If set training = True, dropout will be used also in predict. 
+    # fit automatically apply training=true to dropout, predict(evaluate) automatically ignore "dropout layer" and training=False    
+    def __call__(self, inputs, training):
         o1 = self.out1(inputs)
         d1 = self.dropout(o1)
         o2 = self.out2(d1)
@@ -115,15 +117,13 @@ model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
 gs = RandomizedSearchCV(estimator=Rmodel, \
     param_distributions={'drop_rate' : [0.2, 0.5, 0.8], 'drop_rate2':[0, 0.2, 0.5, 0.8],\
         'NN1':[300, 500, 700], 'NN2' : [100, 300, 500, 700, 900], 'NN3': [20, 50, 100]},\
-            cv=3, scoring='neg_mean_squared_error', n_iter=10)
+            cv=3, scoring='neg_mean_squared_error', n_iter=1)
 
 # {'drop_rate2': 0.2, 'drop_rate': 0.2, 'NN3': 50, 'NN2': 700, 'NN1': 300} -0.06169853871182165
 # rmse :  0.38203848699753357
 
 # %%
 history = gs.fit(x_train, y_train, validation_data=(x_test, y_test) ,callbacks=[model_checkpoint_callback])
-#gs.best_estimator_.model.save('DNNmodel.h5') (For functional)
-#gs.best_estimator_.model.save_weights() (For subclass)
 
 mse = mean_squared_error(y_test, gs.predict(x_test))
 print('rmse : ', np.sqrt(mse))
